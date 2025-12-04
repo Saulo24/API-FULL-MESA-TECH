@@ -1,79 +1,109 @@
-// /src/components/ProjectCard.jsx
-
 import React from 'react';
-import { FiDownload, FiChevronRight } from 'react-icons/fi';
-
-// Componente da "Barra" de Status atualizado
-const ProgressStatus = ({ percentage }) => {
-  // Define as classes de cor com base na porcentagem
-  let colorClasses = {
-    bg: 'bg-gray-100',
-    text: 'text-gray-600',
-    border: 'border-gray-400', // Cor da borda
-  };
-
-  if (percentage > 0 && percentage < 50) {
-    colorClasses = {
-      bg: 'bg-red-100',
-      text: 'text-red-600',
-      border: 'border-red-500',
-    };
-  } else if (percentage >= 50 && percentage < 75) {
-    colorClasses = {
-      bg: 'bg-orange-100',
-      text: 'text-orange-600',
-      border: 'border-orange-400',
-    };
-  } else if (percentage >= 75) {
-    colorClasses = {
-      bg: 'bg-yellow-100',
-      text: 'text-yellow-600',
-      border: 'border-yellow-400',
-    };
-  }
-
-  return (
-    // Div sem 'rounded', com borda inferior de 4px e cor dinâmica
-    <div className={`w-full h-7 flex items-center pl-3 border-b-4 ${colorClasses.bg} ${colorClasses.border}`}>
-      <span className={`text-sm font-bold ${colorClasses.text}`}>
-        {percentage}%
-      </span>
-    </div>
-  );
-};
+import { Link } from 'react-router-dom';
 
 const ProjectCard = ({ project }) => {
+  // Calcular progresso
+  const progress = project.progresso || 
+    (project.horasEstimadas > 0 
+      ? Math.round((project.horasRealizadas / project.horasEstimadas) * 100) 
+      : 0);
+
+  // Formatar datas
+  const formatDate = (dateString) => {
+    if (!dateString) return '--/--/----';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR');
+  };
+
+  // Cor da barra de progresso baseada no progresso
+  const getProgressColor = () => {
+    if (progress < 25) return 'bg-red-400';
+    if (progress < 50) return 'bg-orange-400';
+    if (progress < 75) return 'bg-yellow-400';
+    return 'bg-green-400';
+  };
+
+  // Cor do status
+  const getStatusColor = () => {
+    switch (project.status) {
+      case 'planejamento': return 'bg-blue-100 text-blue-800';
+      case 'em_andamento': return 'bg-green-100 text-green-800';
+      case 'pausado': return 'bg-yellow-100 text-yellow-800';
+      case 'concluido': return 'bg-gray-100 text-gray-800';
+      case 'cancelado': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusLabel = () => {
+    switch (project.status) {
+      case 'planejamento': return 'Planejamento';
+      case 'em_andamento': return 'Em Andamento';
+      case 'pausado': return 'Pausado';
+      case 'concluido': return 'Concluído';
+      case 'cancelado': return 'Cancelado';
+      default: return project.status;
+    }
+  };
+
   return (
-    <div className="bg-white p-5 rounded-lg shadow-sm min-w-[280px] flex-shrink-0 border border-gray-200 flex flex-col justify-between">
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-md text-gray-800 uppercase tracking-wider">{project.name}</h3>
-          <FiChevronRight className="text-gray-400 cursor-pointer" size={20} />
+    <Link 
+      to={`/projetos?id=${project._id}`}
+      className="flex-shrink-0 w-72 bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow cursor-pointer"
+    >
+      {/* Cabeçalho do Card */}
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="font-bold text-lg text-gray-800 uppercase">{project.nome}</h3>
+          {project.cliente && (
+            <p className="text-sm text-gray-500">{project.cliente}</p>
+          )}
         </div>
+        <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor()}`}>
+          {getStatusLabel()}
+        </span>
+      </div>
 
-        <div className="mb-4">
-          <ProgressStatus percentage={project.progress} />
+      {/* Barra de Progresso */}
+      <div className="mb-4">
+        <div className="flex justify-between text-sm mb-1">
+          <span className="text-gray-600">Progresso</span>
+          <span className="font-semibold">{progress}%</span>
         </div>
-
-        <div className="text-sm text-gray-500 space-y-2 mb-4">
-          <div className="flex justify-between"><span>Horas trabalhadas</span> <span className="font-semibold text-gray-800">{project.workedHours}h</span></div>
-          <div className="flex justify-between"><span>Data de início</span> <span className="font-semibold text-gray-800">{project.startDate}</span></div>
-          <div className="flex justify-between"><span>Data de término</span> <span className="font-semibold text-gray-800">{project.endDate}</span></div>
+        <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div 
+            className={`h-2.5 rounded-full ${getProgressColor()}`} 
+            style={{ width: `${Math.min(progress, 100)}%` }}
+          ></div>
         </div>
       </div>
 
-      <div>
-        <hr className="my-3 border-t border-gray-200"/>
-        <div className="text-sm text-gray-500 flex justify-between mb-4">
-            <span>Horas necessárias</span> 
-            <span className="font-semibold text-gray-800">{project.totalHours}h</span>
-        </div>
-        <button className="flex items-center text-gray-600 hover:text-gray-900 text-sm font-semibold">
-          <FiDownload className="mr-2" />
-          Baixar relatório
-        </button>
+      {/* Horas */}
+      <div className="flex justify-between text-sm text-gray-600 mb-4">
+        <span>Horas: {project.horasRealizadas || 0}h / {project.horasEstimadas || 0}h</span>
       </div>
-    </div>
+
+      {/* Datas */}
+      <div className="flex justify-between text-xs text-gray-500 border-t pt-3">
+        <div>
+          <p className="font-medium">Início</p>
+          <p>{formatDate(project.dataInicio)}</p>
+        </div>
+        <div className="text-right">
+          <p className="font-medium">Término</p>
+          <p>{formatDate(project.dataTermino)}</p>
+        </div>
+      </div>
+
+      {/* Colaboradores */}
+      {project.totalColaboradores > 0 && (
+        <div className="mt-3 pt-3 border-t">
+          <p className="text-xs text-gray-500">
+            {project.totalColaboradores} colaborador{project.totalColaboradores > 1 ? 'es' : ''}
+          </p>
+        </div>
+      )}
+    </Link>
   );
 };
 
